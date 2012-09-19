@@ -12,20 +12,20 @@ static struct pollfd pollfds[1 + MAX_PROCESSES];
 
 static size_t proc_count = 0;
 
-rjs_prot_t* rjs_proc_alloc() {
-  int i;
+
+
+rjs_process_t* rjs_proc_alloc() {
+  rjs_process_t* p;
   
-  for (i = 0; i < MAX_PROCESSES; i++) {
-    if (procs[i].state == RJS_FREE) {
-      rjs_process_t* proc = &procs[i];
-      memset(proc, 0, sizeof *proc);
-      proc->state = RJS_ALLOCATED;
-      return proc;
-    }
-  }
+  p = malloc(sizeof *p);
+  if (p == NULL)
+    return NULL;
+    
+  memset(p, 0, sizeof *p);
   
-  errno = ENOSPC;
-  return NULL;  
+  p->state = RJS_ALLOCATED;
+  
+  return p;
 }
 
 
@@ -54,7 +54,7 @@ void rjs_proc_free(rjs_proc_t* p) {
 
 int rjs_proc_start(rjs_process_t* proc) {
   int pid;
-  int log_fd;
+  int log_fd = -1s;
   
   assert(proc->state == PROC_ALLOCATED);
   
