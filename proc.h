@@ -2,6 +2,8 @@
 #ifndef _RJS_PROC_H
 #define _RJS_PROC_H
 
+#include "ngx-queue.h"
+
 typedef enum {
   RJS_FREE = 0,
   RJS_ALLOCATED = 1,
@@ -12,8 +14,7 @@ typedef enum {
   RJS_RESTART_WAIT = 7,
 } rjs_proc_state_t;
 
-typedef struct {
-  rjs_process_state_t state;
+typedef struct rjs_process_state_t {
   char* tag;
   char* file;
   char* args;
@@ -22,6 +23,7 @@ typedef struct {
   int pid;
   int exit_status;
   int log_fd;
+  ngx_queue_t process_queue;
 } rjs_proc_t;
 
 typedef struct rjs_command rjs_command_t;

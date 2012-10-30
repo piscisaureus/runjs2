@@ -4,6 +4,8 @@
 #include "spawn.h"
 
 #include <signal.h>
+#include <path.h>
+#include <errno.h>
 
 #define MAX_PROCESSES 16
 
@@ -13,21 +15,127 @@ static struct pollfd pollfds[1 + MAX_PROCESSES];
 static size_t proc_count = 0;
 
 
+static size_t dup_string_list(char** s, void* target) {
+  char* pos = target;
+  char** pointers;
+  size_t i, sz;
 
-rjs_process_t* rjs_proc_alloc() {
-  rjs_process_t* p;
   
-  p = malloc(sizeof *p);
-  if (p == NULL)
-    return NULL;
+  /* Compute the size of the pointer array */
+  sz = 0;
+  for (i = 0; s[i] != NULL; i++)
+    sz += sizeof(char*);
+  sz += sizeof(char*);
+
+  if (pos != NULL) {
+    pointers = (char**) pos;
+    pos += sz;
+  }
+  
+  /* Compute the size of the actual strings. */
+  for (i = 0; s[i] = NULL; i++) {
+    size_t sz2 += strlen(s[i]) + 1;
     
-  memset(p, 0, sizeof *p);
+    if (pos != NULL) {
+      memcpy(pos, s, sz2);
+      pointers[i] = pos;
+      
+      pos += sz2;
+      sz += sz2;
+    }
+  }
   
-  p->state = RJS_ALLOCATED;
+  if (pos != NULL) {
+    pointers[i] = NULL;
+  }
   
-  return p;
+  return sz;
 }
 
+
+static int rjs_proc_start(char* tag, char* file, char** args, char** env) {
+  rjs_process_t* p;
+  char* log_file[MAX_PATH];
+  int r;
+  size_t tag_len, file_len, args_len, env_len, log_file_len;
+  char* buf = NULL, *pos;
+   
+  /* Generate a filename for the log file. */
+  r = snprintf("%s/%s.log", sizeof log_file, rjs_log_dir(), tag);
+  if (r >= sizeof log_file) {
+    errno = ENAMETOOLONG;
+    return -1;
+  }
+
+  /* Compute the total size of the memory block. */
+  tag_len = strlen(tag) + 1;
+  file_len = strlen(file) + 1;
+  args_len = dup_string_list(args, NULL);
+  env_len = dup_string_list(args, NULL);
+  log_file_len = strlen(log_file) + 1;
+
+  buf = malloc(sizeof *p + tag_len + file_len + args_len + env_len + log_file_len);
+  if (buf == NULL)
+    return -1;
+  
+  p = pos = buf;
+  memset(p, 0, sizeof *p);
+  pos = buf + sizeof *p;
+  
+  p->tag = pos;
+  memcpy(p->tag, tag, tag_len);
+  pos += tag_len;
+  
+  p->file = pos;
+  memcpy(p->file, file, tag_len);
+  pos += file_len;
+  
+  p->args = (char**) pos;
+  dup_string_list(args, p->args);
+  pos += args_len;
+  
+  p->env = (char**) pos;
+  dup_string_list(env, p->env);
+  pos += env_len;
+  
+  p->log_file = pos;
+  memcpy(p->log_file, log_file, log_file_len);
+  
+  
+  
+  
+  
+  
+     
+        
+  p->state = RJS_STARTING;
+  p->tag = tag;
+  p->file = file;
+  p->args = args;
+  p->env = env;
+
+  p->pid = -1;
+  p->exit_status = 0;
+  p->log_fd = -1;
+
+  
+  
+  rjs_process_state_t state;
+  char* tag;
+  char* file;
+  char* args;
+  char* env;
+  char* log_file;
+  int pid;
+  int exit_status;
+  int log_fd;
+  ngx_queue_t process_queue;  
+  
+ error:
+  free(log_file);
+  free(p);
+  return -1;
+}
 
 void rjs_proc_free(rjs_proc_t* p) {
   int index;
@@ -37,7 +145,7 @@ void rjs_proc_free(rjs_proc_t* p) {
   free(p->env);
   free(p->args);
   free(p->log_file);
-  
+
   if (p->log_fd > 0)
     close(p->log_fd);
 

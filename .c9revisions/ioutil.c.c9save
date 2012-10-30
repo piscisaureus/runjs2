@@ -1,0 +1,12 @@
+{"ts":1350656414872,"silentsave":true,"restoring":false,"patch":[[]],"length":0}
+{"contributors":[],"silentsave":false,"ts":1350656417407,"patch":[[{"diffs":[[1,"\n\n"]],"start1":0,"start2":0,"length1":0,"length2":2}]],"length":2,"saved":false}
+{"ts":1350656420300,"patch":[[{"diffs":[[0,"\n"],[-1,"\n"]],"start1":0,"start2":0,"length1":2,"length2":1}]],"length":1,"saved":false}
+{"ts":1350656448944,"patch":[[{"diffs":[[0,"\n"],[1,"\nstatic ssize_t read_all(int fd, void* buf, size_t bytes_needed) {\n  size_t bytes_read = 0;\n  \n  while (bytes_read < bytes_needed) {\n    int r = read(fd, (char*) buf + bytes_read, bytes_needed - bytes_read);\n\n    if (r > 0)\n      bytes_read += r;\n\n    if (r == 0 ||\n        (r < 0 && errno != EINTR))\n      return -1;\n  }\n  \n  return bytes_read;\n}\n"]],"start1":0,"start2":0,"length1":1,"length2":349}]],"length":349,"saved":false}
+{"ts":1350656449691,"patch":[[{"diffs":[[0,"ed) {\n  "],[1,"s"],[0,"size_t b"]],"start1":62,"start2":62,"length1":16,"length2":17}]],"length":350,"saved":false}
+{"ts":1350656453537,"patch":[[{"diffs":[[0,"ed) {\n  "],[-1,"s"],[0,"size_t b"]],"start1":62,"start2":62,"length1":17,"length2":16}]],"length":349,"saved":false}
+{"ts":1350656466231,"patch":[[{"diffs":[[0,"ed) {\n  "],[1,"s"],[0,"size_t b"]],"start1":62,"start2":62,"length1":16,"length2":17},{"diffs":[[0,") {\n    "],[-1,"in"],[1,"ssize_"],[0,"t r = re"]],"start1":131,"start2":131,"length1":18,"length2":22}]],"length":354,"saved":false}
+{"ts":1350656495587,"patch":[[{"diffs":[[0,"\n\n"],[-1,"static "],[1,"#include <io.h>\n\n\n"],[0,"ssiz"]],"start1":0,"start2":0,"length1":13,"length2":24}]],"length":365,"saved":false}
+{"contributors":[],"silentsave":false,"ts":1351618988891,"patch":[[{"diffs":[[0," <io.h>\n"],[1,"#include <stdint.h>\n#include <stdlib.h>\n#include <sys/types.h>\n"],[0,"\n\nssize_"]],"start1":10,"start2":10,"length1":16,"length2":79}]],"length":428,"saved":false}
+{"ts":1351619025880,"patch":[[{"diffs":[[0,"\n\n"],[1,"#include <errno.h>\n"],[0,"#include"]],"start1":0,"start2":0,"length1":10,"length2":29},{"diffs":[[0,"pes.h>\n\n"],[1,"#include \"ioutil.h\"\n"],[0,"\nssize_t"]],"start1":93,"start2":93,"length1":16,"length2":36}]],"length":467,"saved":false}
+{"ts":1351619028520,"patch":[[{"diffs":[[0,"til.h\"\n\n"],[1,"\n"],[0,"ssize_t "]],"start1":114,"start2":114,"length1":16,"length2":17}]],"length":468,"saved":false}
+{"ts":1351619038419,"patch":[[{"diffs":[[0,".h>\n"],[-1,"#include <io.h>\n"],[0,"#inc"]],"start1":17,"start2":17,"length1":24,"length2":8}]],"length":452,"saved":false}
