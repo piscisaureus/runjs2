@@ -11,10 +11,11 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include "command.h"
+#include "packet.h"
 
 
 #define SERVER_PATH "/tmp/runjs.sock"
+
 
 #define USE(x) (void) (x)
 #define UNREACHABLE() abort()
@@ -75,8 +76,43 @@ int main(int argc, char* argv[]) {
   if (server_fd < 0)
     fatal_error("create_server");
    
-  if (rjs_run(server_fd))
-    fatal_error("rjs_monitor");
+  for (;;) {
+    int fd;
+    ssize_t r;
+    packet_t* packet;
+        
+    fd = accept(server_fd, NULL, NULL);
+    if (fd < 0)
+      continue;
+      
+    printf("accepted: %d\n", fd);
+    
+    r = read_packet(fd, &packet);
+    if (r < 0)
+      continue;
+      
+    write(1, packet, r);
+    printf("\n");
+    
+    if (packet->type == START_PACKET) {
+      printf("%s\n", ((start_packet_t*) packet)->tag);    
+    }
+    
+    r = write_packet(fd, packet);
+    if (r < 0)
+      perror("write_packet");
+      
+    r = write_packet(fd, packet);
+    if (r < 0)
+      perror("write_packet");
+      
+    
+      
+    printf("written back\n");
+  }
+   
+  /*if (rjs_run(server_fd))
+    fatal_error("rjs_monitor");*/
      
   UNREACHABLE();
 }

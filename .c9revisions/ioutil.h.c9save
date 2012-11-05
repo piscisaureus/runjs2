@@ -14,3 +14,4 @@
 {"ts":1351617425530,"patch":[[{"diffs":[[0,"_H\n\n"],[-1,"#include <stdint.h>\n"],[0,"#inc"]],"start1":34,"start2":34,"length1":28,"length2":8}]],"length":129,"saved":false}
 {"ts":1351617429390,"patch":[[{"diffs":[[0,"UTIL_H\n\n"],[1,"#include <stdint.h>\n"],[0,"#include"]],"start1":30,"start2":30,"length1":16,"length2":36},{"diffs":[[0,"pes.h>\n\n"],[1,"\n"],[0,"ssize_t "]],"start1":74,"start2":74,"length1":16,"length2":17}]],"length":150,"saved":false}
 {"ts":1351618942128,"patch":[[{"diffs":[[0,"pes.h>\n\n"],[-1,"\n"],[0,"ssize_t "]],"start1":74,"start2":74,"length1":17,"length2":16}]],"length":149,"saved":false}
+{"contributors":[],"silentsave":false,"ts":1351863686963,"patch":[[{"diffs":[[0,"needed);"],[1,"\nssize_t write_all(int fd, void* buf, size_t bytes_to_write);"],[0,"\n\n#endif"]],"start1":131,"start2":131,"length1":16,"length2":77}]],"length":210,"saved":false}

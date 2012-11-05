@@ -1,79 +1,25 @@
 
 
+#include <assert.h>
 #include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "ioutil.h"
+#include "packet.h"
 
 
-#define START_PACKET() \
-  PROLOGUE(start, START) \
-    STRING(tag) \
-    STRING(filename) \
-    STRING(cwd) \
-    STRING_LIST(argc, argv) \
-    STRING_LIST(envc, envv) \
-  EPILOGUE(start, START)
-
-#define STOP_PACKET() \
-  PROLOGUE(stop, STOP) \
-    STRING(filename) \
-    STRING(cwd) \
-    STRING_LIST(argc, argv) \
-    STRING_LIST(envc, envv) \
-  EPILOGUE(stop, STOP)
-
-#define ALL_PACKET_TYPES() \
-    START_PACKET() \
-    STOP_PACKET()
-
-/* Define enum with types. */
-#define PROLOGUE(lc, uc) uc##_PACKET,
-#define NUMBER(field) /* empty */
-#define STRING(field) /* empty */
-#define STRING_LIST(count_field, array_field) /* empty */
-#define EPILOGUE(lc, uc) /* empty */
-
-typedef enum {
-  ALL_PACKET_TYPES()
-  PACKET_TYPE_MAX
-} packet_type_t;
-
-#undef PROLOGUE
-#undef NUMBER
-#undef STRING
-#undef STRING_LIST
-#undef EPILOGUE
-
-
-/* Define structs. */
-#define PROLOGUE(lc, uc)                                                      \
-  typedef struct {                                                            \
-    packet_type_t type;
-#define NUMBER(field)                                                         \
-    int32_t field;
-#define STRING(field)                                                         \
-    char* field;
-#define STRING_LIST(count_field, array_field)                                 \
-    int32_t count_field;                                                      \
-    char** array_field;
-#define EPILOGUE(lc, uc)                                                      \
-  } lc##_packet_t;
-
-ALL_PACKET_TYPES()
-
-#undef PROLOGUE
-#undef NUMBER
-#undef STRING
-#undef STRING_LIST
-#undef EPILOGUE
+typedef struct {
+  int32_t type;
+  int32_t size;
+} __attribute__((packed)) wire_data_header_t;
 
 
 /* Define functions to parse individual packet types */
 #define PROLOGUE(lc, uc)                                                      \
-  ssize_t parse_##lc##_packet(char* wire_data, size_t wire_data_size,         \
+  static ssize_t decode_##lc##_packet(char* wire_data, size_t wire_data_size, \
       lc##_packet_t* packet) {                                                \
     char* field_data;                                                         \
     size_t wire_data_pos;                                                     \
@@ -114,6 +60,7 @@ ALL_PACKET_TYPES()
     if (field_data) {                                                         \
       memcpy(field_data + field_data_pos, wire_data + wire_data_pos, len);    \
       field_data[field_data_pos + len] = '\0';                                \
+      packet->field = field_data + field_data_pos;                            \
     }                                                                         \
                                                                               \
     wire_data_pos += len;                                                     \
@@ -138,21 +85,21 @@ ALL_PACKET_TYPES()
     array_size = sizeof(char*) * (count + 1);                                 \
                                                                               \
     if (packet) {                                                             \
-      packet->array_field = (char**) field_data + field_data_pos;             \
+      packet->array_field = (char**) (field_data + field_data_pos);           \
       packet->array_field[count] = NULL;                                      \
     }                                                                         \
                                                                               \
     field_data_pos += array_size;                                             \
                                                                               \
     for (i = 0; i < count; i++) {                                             \
-      STRING((packet)->(array_field)[i])                                      \
+      STRING(array_field[i])                                                  \
     }                                                                         \
   }
 #define EPILOGUE(lc, uc)                                                      \
     return sizeof(*packet) + field_data_pos;                                  \
   }
    
-ALL_PACKET_TYPES();
+ALL_PACKET_TYPES()
 
 #undef PROLOGUE
 #undef NUMBER
@@ -162,16 +109,11 @@ ALL_PACKET_TYPES();
 
 
 /* Define packet reading function. */
-int read_packet(int fd, void** packet_ptr) {
+ssize_t read_packet(int fd, packet_t** packet_ptr) {
   char* wire_data;
-  ssize_t r;
-  int result;
-  
-  struct {
-    int32_t type;
-    int32_t size;
-  } __attribute__((packed)) header;
-  
+  ssize_t r, result;
+  wire_data_header_t header;
+    
   r = read_all(fd, &header, sizeof header);
   if (r < 0) {
     return -1;
@@ -196,25 +138,31 @@ int read_packet(int fd, void** packet_ptr) {
 
 #define PROLOGUE(lc, uc)                                                      \
     case uc##_PACKET: {                                                       \
-      ssize_t size = parse_##lc##_packet(wire_data, header.size, NULL);       \
+      lc##_packet_t* packet;                                                  \
+      ssize_t size;                                                           \
+                                                                              \
+      size = decode_##lc##_packet(wire_data, header.size, NULL);              \
       if (size < 0) {                                                         \
         result = -1;                                                          \
         break;                                                                \
       }                                                                       \
                                                                               \
-      lc##_packet_t* packet = malloc(size);                                   \
+      packet = malloc(size);                                                  \
       if (packet == NULL) {                                                   \
         result = -1;                                                          \
         break;                                                                \
       }                                                                       \
                                                                               \
-      size = parse_##lc##_packet(wire_data, header.size, packet);             \
+      size = decode_##lc##_packet(wire_data, header.size, packet);            \
       if (size < 0) {                                                         \
+        free(packet);                                                         \
+        packet = NULL;                                                        \
         result = -1;                                                          \
         break;                                                                \
       }                                                                       \
                                                                               \
-      result = 0;                                                             \
+      result = size;                                                          \
+      *packet_ptr = (packet_t*) packet;                                       \
       break;                                                                  \
     }
 #define NUMBER(field) /* empty */
@@ -241,3 +189,124 @@ int read_packet(int fd, void** packet_ptr) {
 }
 
 
+/* Define packet encoding functions for individual packet types. */
+#define PROLOGUE(lc, uc)                                                      \
+  static ssize_t encode_##lc##_packet(lc##_packet_t* packet,                  \
+      char* wire_data) {                                                      \
+    size_t wire_data_pos;                                                     \
+    wire_data_header_t* header = (wire_data_header_t*) wire_data;             \
+                                                                              \
+    /* Skip over the header. */                                               \
+    wire_data_pos = sizeof *header;
+#define NUMBER(field)                                                         \
+    {                                                                         \
+      if (wire_data != NULL)                                                  \
+        *(int32_t*) (wire_data + wire_data_pos) = packet->field;              \
+      wire_data_pos += sizeof(int32_t);                                       \
+    }
+#define STRING(field)                                                         \
+    {                                                                         \
+      size_t len;                                                             \
+                                                                              \
+      len = strlen(packet->field);                                            \
+                                                                              \
+      if (wire_data != NULL)                                                  \
+        *(int32_t*) (wire_data + wire_data_pos) = (int32_t) len;              \
+      wire_data_pos += sizeof(int32_t);                                       \
+                                                                              \
+      if (wire_data != NULL)                                                  \
+        memcpy(wire_data + wire_data_pos, packet->field, len);                \
+      wire_data_pos += len;                                                   \
+    }
+#define STRING_LIST(count_field, array_field)                                 \
+    {                                                                         \
+      int32_t count, i;                                                       \
+                                                                              \
+      count = packet->count_field;                                            \
+      if (count < 0) {                                                        \
+        for (count = 0; packet->array_field[count] != NULL; count++)          \
+          /* nothing */;                                                      \
+      }                                                                       \
+                                                                              \
+      if (wire_data != NULL)                                                  \
+        *(int32_t*) (wire_data + wire_data_pos) = (int32_t) count;            \
+      wire_data_pos += sizeof(int32_t);                                       \
+                                                                              \
+      for (i = 0; i < count; i++) {                                           \
+        STRING(array_field[i])                                                \
+      }                                                                       \
+    }
+#define EPILOGUE(lc, uc)                                                      \
+    /* Write header if wire_data was specified. */                            \
+    if (header != NULL) {                                                     \
+      header->type = (int32_t) packet->type;                                  \
+      header->size = wire_data_pos - sizeof *header;                          \
+    }                                                                         \
+                                                                              \
+    return wire_data_pos;                                                     \
+  }
+
+ALL_PACKET_TYPES()
+
+#undef PROLOGUE
+#undef NUMBER
+#undef STRING
+#undef STRING_LIST
+#undef EPILOGUE
+
+
+/* Function to write any packet. */
+ssize_t write_packet(int fd, packet_t* packet) {
+  ssize_t size, r;
+  char* buf;
+  
+  switch (packet->type) {
+#define PROLOGUE(lc, uc)                                                      \
+    case uc##_PACKET: {                                                       \
+      size = encode_##lc##_packet((lc##_packet_t*) packet, NULL);             \
+      if (size < 0)                                                           \
+        return -1;                                                            \
+                                                                              \
+      buf = malloc(size);                                                     \
+      if (buf == NULL)                                                        \
+        return -1;                                                            \
+                                                                              \
+      r = encode_##lc##_packet((lc##_packet_t*) packet, buf);                 \
+      if (r < 0) {                                                            \
+        free(buf);                                                            \
+        return -1;                                                            \
+      }                                                                       \
+                                                                              \
+      assert(r == size);                                                      \
+                                                                              \
+      break;                                                                  \
+    }
+#define NUMBER(field) /* empty */
+#define STRING(field) /* empty */
+#define STRING_LIST(count_field, array_field) /* empty */
+#define EPILOGUE(lc, uc) /* empty */
+
+    ALL_PACKET_TYPES()
+
+#undef PROLOGUE
+#undef NUMBER
+#undef STRING
+#undef STRING_LIST
+#undef EPILOGUE
+
+    default:
+      assert(0);
+  }
+  
+  r = write_all(fd, buf, size);
+  if (r < 0) {
+    free(buf);
+    return -1;
+  }
+  
+  assert(r == size);
+  
+  free(buf);
+
+  return r;
+}
