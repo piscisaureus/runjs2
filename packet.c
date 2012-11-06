@@ -129,13 +129,16 @@ ssize_t read_packet(int fd, packet_t** packet_ptr) {
   r = read_all(fd, wire_data, header.size);
   if (r < 0) {
     return -1;
+  } else if (r == 0) {
+    /* EOF */
+    *packet_ptr = NULL;
+    return 0;
   } else if (r != header.size) {
     errno = EBADMSG;
     return -1;
   }
   
   switch ((packet_type_t) header.type) {
-
 #define PROLOGUE(lc, uc)                                                      \
     case uc##_PACKET: {                                                       \
       lc##_packet_t* packet;                                                  \

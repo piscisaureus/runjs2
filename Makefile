@@ -1,5 +1,5 @@
 
-CFLAGS	=-Wall -Wextra
+CFLAGS	=-Wall -Wextra -pedantic -Ideps/faio
 LDFLAGS	=
 
 BUILDTYPE ?= Release
@@ -15,11 +15,11 @@ B = out/$(BUILDTYPE)
 
 .PHONY: all clean
 
-all: $(B)/runjs-agent
+all: $(B)/rund
 
 clean:
 	@rm -fr out/
 
-$(B)/runjs-agent: cmd.c main.c proc.c spawn.c
+$(B)/rund: packet.c main.c ioutil.c
 	@mkdir -p $(B)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
