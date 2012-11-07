@@ -3,6 +3,6 @@
 #ifndef _RJS_SPAWN_H
 #define _RJS_SPAWN_H
 
-int rjs_spawn(char* file, char* args, char* env, int outfd);
+int do_spawn(char* file, char* argv[], char* envv[], char* cwd, int outfd);
 
 #endif

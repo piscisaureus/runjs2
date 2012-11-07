@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -13,49 +14,6 @@
 
 extern char** environ;
 static int null_fd = -1;
-
-
-/* For the sake of convenience, args and env are compressed into a single string. */
-/* This function expands them to a list of pointers. */
-static char** expand_string(char* s) {
-  size_t num_strings, index, offset;
-  char new_string;
-  char** list;
-  
-  num_strings = 0;
-
-  for (new_string = 1, offset = 0; ; offset++) {
-    if (new_string) {
-      if (s[offset] == '\0')
-        break;
-      num_strings++;
-      new_string = 0;
-    } else {
-      if (s[offset] == '\0')
-        new_string = 1; 
-    }
-  }
-  
-  list = calloc(sizeof(char*), num_strings + 1);
-  if (list == NULL)
-    return NULL;
-
-  index = 0;    
-  for (new_string = 1, offset = 0; ; offset++) {
-    if (new_string) {
-      if (s[offset] == '\0')
-        break;
-      assert(index <= num_strings);
-      list[index++] = s + offset;
-      new_string = 0;
-    } else {
-      if (s[offset] == '\0')
-        new_string = 1;
-    }
-  }
-    
-  return list;    
-}
 
 
 static int get_null_fd() {
@@ -78,7 +36,7 @@ static int get_null_fd() {
 }
 
 
-int rjs_spawn(char* file, char* args, char* env, int outfd) {
+int do_spawn(char* file, char* argv[], char* envv[], char* cwd, int outfd) {
   int err_fds[2] = { -1, -1 };
   pid_t child_pid = 0;
   int spawn_error, r;
@@ -93,7 +51,6 @@ int rjs_spawn(char* file, char* args, char* env, int outfd) {
     
   if (child_pid == 0) {   
     /* We are the child. */
-    char** argv;
     int e;
 
     close(err_fds[0]);
@@ -110,14 +67,11 @@ int rjs_spawn(char* file, char* args, char* env, int outfd) {
     if (dup2(outfd, 2) < 0)
       goto child_error;
     
-    argv = expand_string(args);
-    if (argv == NULL)
+    if (chdir(cwd) < 0)
       goto child_error;
+    
+    environ = envv;
 
-    environ = expand_string(env);
-    if (environ == NULL)
-      goto child_error;
-      
     execvp(file, argv);
 
    child_error:
@@ -165,6 +119,8 @@ int rjs_spawn(char* file, char* args, char* env, int outfd) {
       close(err_fds[1]);
     if (child_pid > 0)
       kill(-child_pid, SIGKILL);
+
+    printf("spawn error %s\n", strerror(saved_errno));
 
     errno = saved_errno;
     return -1;  

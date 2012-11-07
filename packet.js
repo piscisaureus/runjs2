@@ -58,16 +58,25 @@ function definePacketType(layout) {
 
 var StartPacket = definePacketType([
   { type: 'string', name: 'tag'} ,
-  { type: 'string', name: 'filename' },
-  { type: 'string', name: 'cwd' },
+  { type: 'string', name: 'file' },
   { type: 'string_list', name: 'argv' },
-  { type: 'string_list', name: 'envv' }
+  { type: 'string_list', name: 'envv' },
+  { type: 'string', name: 'cwd' }
 ]);
 
 var StopPacket = definePacketType([
   { type: 'string', name: 'tag' }
 ]);
 
+var StartSuccessPacket = definePacketType([
+  { type: 'number', name: 'pid' }
+]);
+
+var ErrorPacket = definePacketType([
+  { type: 'number', name: 'err' },
+  { type: 'string', name: 'message' },
+  { type: 'string', name: 'syscall' }
+]);
 
 
 function encodePacket(packet) {
@@ -217,12 +226,21 @@ function decodePacket(buffer) {
 }
 
 
+function getEnvv() {
+  var envv = [];
+  for (var key in process.env) {
+    envv.push(key + '=' + process.env[key]);
+  }
+  return envv;
+}
+
+
 var p = new StartPacket({
   tag: 'test',
-  filename: ' a file ',
-  cwd: 'blug',
-  envv: ['bla=5', 'hönd=kat'],
-  argv: []
+  file: 'echo',
+  cwd: '.',
+  argv: ['echo', 'eat this mofo'],
+  envv: getEnvv()
 });
 
 console.log(p);
@@ -246,6 +264,7 @@ var left = new Buffer(0);
 
 function streamPackets(stream) {
   stream.on('data', function(buffer) {
+    console.log(buffer);
     var result;
 
     left = Buffer.concat([left, buffer]);

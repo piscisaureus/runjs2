@@ -1,6 +1,6 @@
 
 CFLAGS	=-Wall -Wextra -pedantic -Ideps/faio
-LDFLAGS	=
+LDFLAGS	= -lrt
 
 BUILDTYPE ?= Release
 
@@ -20,6 +20,6 @@ all: $(B)/rund
 clean:
 	@rm -fr out/
 
-$(B)/rund: packet.c main.c ioutil.c
+$(B)/rund: packet.c main.c ioutil.c spawn.c
 	@mkdir -p $(B)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)

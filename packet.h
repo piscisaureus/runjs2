@@ -10,10 +10,10 @@
 #define START_PACKET() \
   PROLOGUE(start, START) \
     STRING(tag) \
-    STRING(filename) \
-    STRING(cwd) \
+    STRING(file) \
     STRING_LIST(argc, argv) \
     STRING_LIST(envc, envv) \
+    STRING(cwd) \
   EPILOGUE(start, START)
 
 #define STOP_PACKET() \
@@ -21,9 +21,24 @@
     STRING(tag) \
   EPILOGUE(stop, STOP)
 
+#define START_SUCCESS_PACKET() \
+  PROLOGUE(start_success, START_SUCCESS) \
+    NUMBER(pid) \
+  EPILOGUE(start_success, START_SUCCESS)
+
+#define ERROR_PACKET() \
+  PROLOGUE(error, ERROR) \
+    NUMBER(err) \
+    STRING(message) \
+    STRING(syscall) \
+  EPILOGUE(error, ERROR)
+
+
 #define ALL_PACKET_TYPES() \
     START_PACKET() \
-    STOP_PACKET()
+    STOP_PACKET() \
+    START_SUCCESS_PACKET() \
+    ERROR_PACKET()
 
 
 /* Define enum with types. */
