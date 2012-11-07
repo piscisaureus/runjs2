@@ -9,6 +9,7 @@
 
 #include "ioutil.h"
 #include "packet.h"
+#include "util.h"
 
 
 typedef struct {
@@ -24,6 +25,8 @@ typedef struct {
     char* field_data;                                                         \
     size_t wire_data_pos;                                                     \
     size_t field_data_pos;                                                    \
+                                                                              \
+    USE(field_data);                                                          \
                                                                               \
     if (packet != NULL) {                                                     \
       field_data = (char*) (packet + 1);                                      \

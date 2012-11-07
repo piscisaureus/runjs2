@@ -12,6 +12,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "util.h"
+
+
 extern char** environ;
 static int null_fd = -1;
 
@@ -76,7 +79,8 @@ int do_spawn(char* file, char* argv[], char* envv[], char* cwd, int outfd) {
 
    child_error:
     e = errno;
-    write(err_fds[1], &e, sizeof e);
+    r = write(err_fds[1], &e, sizeof e);
+    USE(r);
     exit(127);
   }
   
