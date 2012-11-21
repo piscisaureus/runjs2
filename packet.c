@@ -37,14 +37,14 @@ typedef struct {
                                                                               \
     wire_data_pos = 0;                                                        \
     field_data_pos = 0;                                                       
-#define NUMBER(field)                                                         \
+#define SCALAR(field, type)                                                   \
   {                                                                           \
-    if (wire_data_size < wire_data_pos + sizeof(int32_t))                     \
+    if (wire_data_size < wire_data_pos + sizeof(type))                        \
       return -1;                                                              \
                                                                               \
     if (packet)                                                               \
-      packet->field = *(uint32_t*) (wire_data + wire_data_pos);               \
-    wire_data_pos += sizeof(uint32_t);                                        \
+      packet->field = *(type*) (wire_data + wire_data_pos);                   \
+    wire_data_pos += sizeof(type);                                            \
   }
 #define STRING(field)                                                         \
   {                                                                           \
@@ -105,7 +105,7 @@ typedef struct {
 ALL_PACKET_TYPES()
 
 #undef PROLOGUE
-#undef NUMBER
+#undef SCALAR
 #undef STRING
 #undef STRING_LIST
 #undef EPILOGUE
@@ -171,7 +171,7 @@ ssize_t read_packet(int fd, packet_t** packet_ptr) {
       *packet_ptr = (packet_t*) packet;                                       \
       break;                                                                  \
     }
-#define NUMBER(field) /* empty */
+#define SCALAR(field, type) /* empty */
 #define STRING(field) /* empty */
 #define STRING_LIST(count_field, array_field) /* empty */
 #define EPILOGUE(lc, uc) /* empty */
@@ -179,7 +179,7 @@ ssize_t read_packet(int fd, packet_t** packet_ptr) {
     ALL_PACKET_TYPES()
     
 #undef PROLOGUE
-#undef NUMBER
+#undef SCALAR
 #undef STRING
 #undef STRING_LIST
 #undef EPILOGUE
@@ -204,11 +204,11 @@ ssize_t read_packet(int fd, packet_t** packet_ptr) {
                                                                               \
     /* Skip over the header. */                                               \
     wire_data_pos = sizeof *header;
-#define NUMBER(field)                                                         \
+#define SCALAR(field, type)                                                   \
     {                                                                         \
       if (wire_data != NULL)                                                  \
-        *(int32_t*) (wire_data + wire_data_pos) = packet->field;              \
-      wire_data_pos += sizeof(int32_t);                                       \
+        *(type*) (wire_data + wire_data_pos) = packet->field;                 \
+      wire_data_pos += sizeof(type);                                          \
     }
 #define STRING(field)                                                         \
     {                                                                         \
@@ -255,7 +255,7 @@ ssize_t read_packet(int fd, packet_t** packet_ptr) {
 ALL_PACKET_TYPES()
 
 #undef PROLOGUE
-#undef NUMBER
+#undef SCALAR
 #undef STRING
 #undef STRING_LIST
 #undef EPILOGUE
@@ -287,7 +287,7 @@ ssize_t write_packet(int fd, packet_t* packet) {
                                                                               \
       break;                                                                  \
     }
-#define NUMBER(field) /* empty */
+#define SCALAR(field, type) /* empty */
 #define STRING(field) /* empty */
 #define STRING_LIST(count_field, array_field) /* empty */
 #define EPILOGUE(lc, uc) /* empty */
@@ -295,7 +295,7 @@ ssize_t write_packet(int fd, packet_t* packet) {
     ALL_PACKET_TYPES()
 
 #undef PROLOGUE
-#undef NUMBER
+#undef SCALAR
 #undef STRING
 #undef STRING_LIST
 #undef EPILOGUE

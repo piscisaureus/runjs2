@@ -20,6 +20,6 @@ all: $(B)/rund
 clean:
 	@rm -fr out/
 
-$(B)/rund: packet.c main.c ioutil.c spawn.c
+$(B)/rund: packet.c main.c ioutil.c process.c server.c spawn.c util.c
 	@mkdir -p $(B)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)

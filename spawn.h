@@ -1,8 +1,9 @@
 
 
-#ifndef _RJS_SPAWN_H
-#define _RJS_SPAWN_H
+#ifndef _SPAWN_H
+#define _SPAWN_H
 
-int do_spawn(char* file, char* argv[], char* envv[], char* cwd, int outfd);
+int spawn(const char* file, char* const* argv, char* const* envv,
+    const char* cwd, int outfd);
 
 #endif

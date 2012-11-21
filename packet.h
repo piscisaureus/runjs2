@@ -16,34 +16,59 @@
     STRING(cwd) \
   EPILOGUE(start, START)
 
+#define START_RESULT_PACKET() \
+  PROLOGUE(start_result, START_RESULT) \
+    STRING(tag) \
+    INTEGER(id) \
+    INTEGER(pid) \
+    INTEGER(error) \
+    STRING(message) \
+  EPILOGUE(start_result, START_RESULT)
+
 #define STOP_PACKET() \
   PROLOGUE(stop, STOP) \
     STRING(tag) \
+    INTEGER(id) \
+    INTEGER(wildcard) \
+    INTEGER(kill_signo) \
+    INTEGER(kill_group) \
+    INTEGER(hard_kill_timeout) \
   EPILOGUE(stop, STOP)
 
-#define START_SUCCESS_PACKET() \
-  PROLOGUE(start_success, START_SUCCESS) \
-    NUMBER(pid) \
-  EPILOGUE(start_success, START_SUCCESS)
-
-#define ERROR_PACKET() \
-  PROLOGUE(error, ERROR) \
-    NUMBER(err) \
+#define STOP_RESULT_PACKET() \
+  PROLOGUE(stop_result, STOP_RESULT) \
+    STRING(tag) \
+    INTEGER(id) \
+    INTEGER(pid) \
+    INTEGER(state) \
+    INTEGER(result) \
+    INTEGER(error) \
     STRING(message) \
-    STRING(syscall) \
-  EPILOGUE(error, ERROR)
+  EPILOGUE(stop_result, STOP_RESULT)
 
+#define END_PACKET() \
+  PROLOGUE(end, END) \
+    INTEGER(result) \
+    INTEGER(error) \
+    STRING(message) \
+  EPILOGUE(end, END)
 
 #define ALL_PACKET_TYPES() \
     START_PACKET() \
+    START_RESULT_PACKET() \
     STOP_PACKET() \
-    START_SUCCESS_PACKET() \
-    ERROR_PACKET()
+    STOP_RESULT_PACKET() \
+    END_PACKET()
 
 
-/* Define enum with types. */
+/* Define helpers for scalar types. */
+#define INTEGER(field) SCALAR(field, int32_t)
+#define FLOAT(field) SCALAR(field, double)
+
+
+/* Define enum with packet types. */
 #define PROLOGUE(lc, uc) uc##_PACKET,
-#define NUMBER(field) /* empty */
+#define SCALAR(field, type) /* empty */
 #define STRING(field) /* empty */
 #define STRING_LIST(count_field, array_field) /* empty */
 #define EPILOGUE(lc, uc) /* empty */
@@ -54,7 +79,7 @@ typedef enum {
 } packet_type_t;
 
 #undef PROLOGUE
-#undef NUMBER
+#undef SCALAR
 #undef STRING
 #undef STRING_LIST
 #undef EPILOGUE
@@ -70,8 +95,8 @@ typedef struct {
 #define PROLOGUE(lc, uc)                                                      \
   typedef struct {                                                            \
     packet_type_t type;
-#define NUMBER(field)                                                         \
-    int32_t field;
+#define SCALAR(field, type)                                                   \
+    type field;
 #define STRING(field)                                                         \
     char* field;
 #define STRING_LIST(count_field, array_field)                                 \
@@ -83,7 +108,7 @@ typedef struct {
 ALL_PACKET_TYPES()
 
 #undef PROLOGUE
-#undef NUMBER
+#undef SCALAR
 #undef STRING
 #undef STRING_LIST
 #undef EPILOGUE
